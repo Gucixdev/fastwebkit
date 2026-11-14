@@ -1,4 +1,4 @@
-package main
+package payments
 
 import (
 	"database/sql"
@@ -14,14 +14,13 @@ import (
 	"github.com/stripe/stripe-go/v79/webhook"
 
 	"fastwebapp/gems/database"
-	"fastwebapp/gems/payments"
 )
 
 const whSecret = "whsec_test"
 
 type env struct {
 	h  http.HandlerFunc
-	l  *payments.Ledger
+	l  *Ledger
 	db *sql.DB
 }
 
@@ -32,7 +31,7 @@ func newEnv(t *testing.T) env {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	l, err := payments.NewLedger(db)
+	l, err := NewLedger(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +41,7 @@ func newEnv(t *testing.T) env {
 		}
 		return 0, "", false
 	}
-	return env{webhookHandler(payments.NewStripe("sk_fake", whSecret), l, price), l, db}
+	return env{Handler(NewStripe("sk_fake", whSecret), l, price), l, db}
 }
 
 func (e env) post(body string, sig string) int {
@@ -64,13 +63,13 @@ func (e env) grants(t *testing.T) int {
 	return n
 }
 
-func session(status, slug string, amount int, cur string) string {
+func checkoutSession(status, slug string, amount int, cur string) string {
 	return fmt.Sprintf(`{"id":"evt_1","type":"checkout.session.completed","data":{"object":{"object":"checkout.session","payment_status":%q,"payment_intent":"pi_1","amount_total":%d,"currency":%q,"metadata":{"item_slug":%q}}}}`, status, amount, cur, slug)
 }
 
 func TestBadSignatureRejected(t *testing.T) {
 	e := newEnv(t)
-	if c := e.post(session("paid", "widget", 3499, "usd"), "t=1,v1=deadbeef"); c != http.StatusBadRequest {
+	if c := e.post(checkoutSession("paid", "widget", 3499, "usd"), "t=1,v1=deadbeef"); c != http.StatusBadRequest {
 		t.Fatalf("code %d", c)
 	}
 	if e.grants(t) != 0 {
@@ -80,7 +79,7 @@ func TestBadSignatureRejected(t *testing.T) {
 
 func TestReplayIsIdempotent(t *testing.T) {
 	e := newEnv(t)
-	b := session("paid", "widget", 3499, "usd")
+	b := checkoutSession("paid", "widget", 3499, "usd")
 	for i := 0; i < 3; i++ {
 		if c := e.post(b, ""); c != 200 {
 			t.Fatalf("code %d", c)
@@ -96,7 +95,7 @@ func TestReplayIsIdempotent(t *testing.T) {
 
 func TestMismatchRefused(t *testing.T) {
 	e := newEnv(t)
-	for _, b := range []string{session("paid", "widget", 100, "usd"), session("paid", "widget", 3499, "eur"), session("paid", "widget", 9999, "usd")} {
+	for _, b := range []string{checkoutSession("paid", "widget", 100, "usd"), checkoutSession("paid", "widget", 3499, "eur"), checkoutSession("paid", "widget", 9999, "usd")} {
 		if c := e.post(b, ""); c != 200 {
 			t.Fatalf("code %d", c)
 		}
@@ -115,8 +114,8 @@ func TestOversizedBodyRejected(t *testing.T) {
 
 func TestUnknownSlugAndUnpaidIgnored(t *testing.T) {
 	e := newEnv(t)
-	e.post(session("paid", "nope", 3499, "usd"), "")
-	e.post(session("unpaid", "widget", 3499, "usd"), "")
+	e.post(checkoutSession("paid", "nope", 3499, "usd"), "")
+	e.post(checkoutSession("unpaid", "widget", 3499, "usd"), "")
 	if e.grants(t) != 0 {
 		t.Fatal("granted")
 	}
@@ -124,7 +123,7 @@ func TestUnknownSlugAndUnpaidIgnored(t *testing.T) {
 
 func TestConcurrentDuplicatesGrantOnce(t *testing.T) {
 	e := newEnv(t)
-	b := session("paid", "widget", 3499, "usd")
+	b := checkoutSession("paid", "widget", 3499, "usd")
 	var wg sync.WaitGroup
 	var bad int32
 	for i := 0; i < 50; i++ {
@@ -154,7 +153,7 @@ func TestStripeRefundAndDisputeRevokeIdempotently(t *testing.T) {
 		refundBody("charge.dispute.created", `{"object":"dispute","payment_intent":"pi_1"}`),
 	} {
 		e := newEnv(t)
-		e.post(session("paid", "widget", 3499, "usd"), "")
+		e.post(checkoutSession("paid", "widget", 3499, "usd"), "")
 		if ok, _ := e.l.Paid("widget"); !ok {
 			t.Fatal("not paid")
 		}
@@ -171,14 +170,14 @@ func TestStripeRefundAndDisputeRevokeIdempotently(t *testing.T) {
 
 func TestPartialRefundKeepsEntitlementAndRefundBeforePayRevokes(t *testing.T) {
 	e := newEnv(t)
-	e.post(session("paid", "widget", 3499, "usd"), "")
+	e.post(checkoutSession("paid", "widget", 3499, "usd"), "")
 	e.post(refundBody("charge.refunded", `{"object":"charge","refunded":false,"payment_intent":"pi_1"}`), "")
 	if ok, _ := e.l.Paid("widget"); !ok {
 		t.Fatal("partial refund revoked")
 	}
 	e2 := newEnv(t) // out-of-order delivery: refund first
 	e2.post(refundBody("charge.refunded", `{"object":"charge","refunded":true,"payment_intent":"pi_1"}`), "")
-	e2.post(session("paid", "widget", 3499, "usd"), "")
+	e2.post(checkoutSession("paid", "widget", 3499, "usd"), "")
 	if ok, _ := e2.l.Paid("widget"); ok {
 		t.Fatal("refund-before-payment not honoured")
 	}

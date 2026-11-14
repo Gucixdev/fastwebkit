@@ -20,6 +20,11 @@ package (`gems/<name>/`) that knows nothing about the others; the app (`fastweba
     fastwebapp/  cmd/fastwebapp (Go wiring), frontend/ (vite)
     go.mod       module fastwebapp (root, so gems/ and fastwebapp/ are one module)
 
+Payments by convention (`gems/payments/pay.go`): set `STRIPE_API_KEY` (or `PAYPAL_CLIENT_ID`, or `BTCPAY_SERVER_URL`) plus that
+provider's secrets and call `payments.Mount(mux, db, find)`: it adds `POST /items/{slug}/checkout` and
+`POST /webhooks/<provider>`, the exactly-once ledger and refund revocation. `pay.go` holds the types, guards, ledger and
+handler; each provider is one file (`stripe.go`, `paypal.go`, `crypto.go`).
+
 Test: `go test -race ./gems/...`  and  `cd fastwebapp && npx vitest run`.
 
 ## Payments - what is guaranteed (all covered by tests)

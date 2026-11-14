@@ -12,3 +12,7 @@ fastwebapp/fastwebapp
 *.log
 /fastwebapp/downloads/
 /fastwebapp/downloads/
+*~
+#*#
+run.out
+/fastwebapp/uploads/
