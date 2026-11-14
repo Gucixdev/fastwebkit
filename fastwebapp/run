@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$here"
+
+pkill -f "$here/fastwebapp" 2>/dev/null || true
+pkill -f "vite --port 5173" 2>/dev/null || true
+
+go build -o fastwebapp ./cmd/fastwebapp
+
+STRIPE_API_KEY="${STRIPE_API_KEY:-sk_test_fake}" ADDR=:8080 ./fastwebapp > server.log 2>&1 &
+backend_pid=$!
+
+[ -d node_modules ] || npm install
+npx vite --port 5173 > vite.log 2>&1 &
+frontend_pid=$!
+
+cleanup() {
+	kill "$backend_pid" "$frontend_pid" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+for _ in $(seq 1 50); do
+	curl -s -o /dev/null http://localhost:5173/ && break
+	sleep 0.2
+done
+
+flatpak run org.mozilla.firefox http://localhost:5173 &
+
+wait "$backend_pid" "$frontend_pid"

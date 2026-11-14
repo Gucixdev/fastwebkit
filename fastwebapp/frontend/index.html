@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fastwebapp demo</title>
+    <style>
+      :root {
+        --bg: #0b0d12;
+        --bg-raised: #15181f;
+        --bg-card: #1b1f29;
+        --border: #2a2e38;
+        --text: #e8e8e8;
+        --accent: #7fd1a8;
+        --error: #e07a7a;
+      }
+      html[data-theme="light"] {
+        --bg: #f5f6f8;
+        --bg-raised: #ffffff;
+        --bg-card: #ffffff;
+        --border: #d7dae0;
+        --text: #1a1d23;
+        --accent: #2e8b57;
+        --error: #c23b3b;
+      }
+
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; overflow-x: hidden; }
+      #app { min-height: 100vh; max-width: 100vw; }
+
+      header { grid-area: header; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 16px; background: var(--bg-raised); border-bottom: 1px solid var(--border); }
+      header h1 { font-size: 18px; margin: 0; }
+      aside { grid-area: sidebar; background: var(--bg-raised); border-right: 1px solid var(--border); padding: 16px; box-sizing: border-box; overflow: auto; }
+      aside nav { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+      aside nav a { color: var(--accent); text-decoration: none; }
+      main { grid-area: main; padding: 16px; box-sizing: border-box; overflow: auto; max-width: 100%; }
+      footer { grid-area: footer; padding: 10px 16px; background: var(--bg-raised); border-top: 1px solid var(--border); font-size: 13px; color: var(--accent); }
+
+      main section { margin-bottom: 32px; max-width: 100%; }
+      main section h2 { font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+
+      /* Every section can be as wide as its content wants (a 480px canvas, a wide table), but
+         must never force the PAGE wider than the viewport - each one scales itself down instead. */
+      img, canvas, table, .fwa-datatable, .fwa-chat { max-width: 100%; }
+      canvas { display: block; height: auto; }
+      .fwa-export-buttons { flex-wrap: wrap; }
+
+      #hero { width: 100%; height: 280px; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+
+      .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; will-change: transform; }
+      .card h3 { margin: 0 0 6px; font-size: 15px; }
+      .card .price { color: var(--accent); font-weight: 600; }
+
+      button { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+      button:hover { border-color: var(--accent); }
+      .fwa-theme-toggle { margin-left: auto; }
+
+      .fwa-searchbar { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+
+      .fwa-export-buttons { display: flex; gap: 8px; margin-bottom: 10px; }
+
+      /* datatable */
+      .fwa-datatable table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+      .fwa-datatable th, .fwa-datatable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
+      .fwa-datatable-sortable { cursor: pointer; user-select: none; }
+      .fwa-datatable-sortable:hover { color: var(--accent); }
+
+      /* pagination */
+      .fwa-pagination { display: flex; gap: 4px; }
+      .fwa-pagination-active { border-color: var(--accent); color: var(--accent); }
+
+      /* progressbar */
+      .fwa-progressbar-track { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; height: 10px; overflow: hidden; margin-top: 8px; }
+      .fwa-progressbar-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.15s ease; }
+      .fwa-progressbar-indeterminate .fwa-progressbar-fill { width: 40% !important; animation: fwa-indeterminate 1.2s ease-in-out infinite; }
+      @keyframes fwa-indeterminate { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+      /* upload */
+      .fwa-upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; color: var(--text); }
+      .fwa-upload-zone-over { border-color: var(--accent); color: var(--accent); }
+
+      /* notifications */
+      .fwa-notifications { position: fixed; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; }
+      .fwa-toast { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 13px; cursor: pointer; max-width: 320px; }
+      .fwa-toast-success { border-color: var(--accent); }
+      .fwa-toast-error { border-color: var(--error); color: var(--error); }
+
+      /* chat */
+      .fwa-chat { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+      .fwa-chat-message { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); }
+      .fwa-chat-user { align-self: flex-end; }
+      .fwa-chat-assistant { align-self: flex-start; }
+      .fwa-chat-actions { display: flex; gap: 6px; margin-top: 8px; }
+      .fwa-chat-actions button { font-size: 11px; padding: 3px 8px; }
+      .fwa-chat-branch-switcher { font-size: 11px; color: var(--accent); align-self: center; }
+
+      /* constraint-layout opt-in demo box */
+      .fwa-constraint-demo-box { position: relative; height: 160px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+      .fwa-constraint-demo-sidebar { position: absolute; background: var(--bg-raised); display: flex; align-items: center; justify-content: center; }
+      .fwa-constraint-demo-main { position: absolute; background: var(--bg-card); display: flex; align-items: center; justify-content: center; }
+
+      canvas { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin: 4px 8px 4px 0; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

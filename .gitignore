@@ -1,0 +1,14 @@
+
+.lake/
+node_modules/
+*.o
+*.a
+*.so
+.env
+.env.*
+fastwebapp/fastwebapp
+*.db
+*.db-*
+*.log
+/fastwebapp/downloads/
+/fastwebapp/downloads/
