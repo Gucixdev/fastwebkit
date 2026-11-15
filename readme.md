@@ -62,7 +62,7 @@ Same contract tests ran on real SQLite, PostgreSQL 17, MariaDB 11 and MongoDB 8 
     FWK_TEST_POSTGRES=postgres://postgres:pw@127.0.0.1:55432/postgres FWK_TEST_MYSQL=mysql://root:pw@127.0.0.1:53306/t \
     FWK_TEST_MONGO=mongodb://127.0.0.1:57017 go test -race ./kit/...
 
-auth + downloads tests also ran green on all three SQL backends (`FWK_TEST_DB=postgres|mysql|sqlite go test ./gems/auth ./gems/downloads`, helper `database.OpenTest`); gems/content has no SQL. Not done: Redis/KV, DuckDB.
+auth + downloads tests also ran green on all three SQL backends (`FWK_TEST_DB=postgres|mysql|sqlite go test ./kit`, helper `OpenTest`); the content module has no SQL. Not done: Redis/KV, DuckDB.
 
 ## Lean 4 (lean4/) - proofs, not tests
 
