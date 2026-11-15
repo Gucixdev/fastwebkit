@@ -16,3 +16,6 @@ fastwebapp/fastwebapp
 #*#
 run.out
 /fastwebapp/uploads/
+/templates/*/downloads/
+/templates/*/*.db
+/templates/*/.bin

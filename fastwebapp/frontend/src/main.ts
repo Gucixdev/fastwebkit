@@ -1,19 +1,19 @@
 import * as THREE from "three";
-import { ClassicLayout } from "../../web/layout_classic-layout";
-import { ConstraintLayout, Operator, Strength } from "../../web/layout_constraint-layout";
-import { Scene3D } from "../../web/render3d_scene";
-import { Spring } from "../../web/spring";
-import { SearchBar, filterByQuery } from "../../web/searchbar";
-import { ProgressBar } from "../../web/progressbar";
-import { ThemeController } from "../../web/theme";
-import { drawBarChart, drawLineChart, type BarDatum } from "../../web/charts";
-import { downloadCSV, downloadXLSX, parseCSV } from "../../web/export";
-import { parseXLSX } from "../../web/export_xlsx-read";
-import { DataTable } from "../../web/datatable";
-import { NotificationCenter } from "../../web/notifications";
-import { UploadZone } from "../../web/upload";
-import { ChatStore, ChatView, actionButton, copyText, copyToClipboard } from "../../web/chat";
-import { generateKeyPair, exportPublicKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage } from "../../web/chat_crypto";
+import { ClassicLayout } from "../../web/layout/layout_classic-layout";
+import { ConstraintLayout, Operator, Strength } from "../../web/layout/layout_constraint-layout";
+import { Scene3D } from "../../web/render3d/render3d_scene";
+import { Spring } from "../../web/widgets/spring";
+import { SearchBar, filterByQuery } from "../../web/widgets/searchbar";
+import { ProgressBar } from "../../web/widgets/progressbar";
+import { ThemeController } from "../../web/widgets/theme";
+import { drawBarChart, drawLineChart, type BarDatum } from "../../web/charts/charts";
+import { downloadCSV, downloadXLSX, parseCSV } from "../../web/export/export";
+import { parseXLSX } from "../../web/export/export_xlsx-read";
+import { DataTable } from "../../web/table/datatable";
+import { NotificationCenter } from "../../web/widgets/notifications";
+import { UploadZone } from "../../web/widgets/upload";
+import { ChatStore, ChatView, actionButton, copyText, copyToClipboard } from "../../web/chat/chat";
+import { generateKeyPair, exportPublicKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage } from "../../web/chat/chat_crypto";
 
 interface Item {
   Slug: string;

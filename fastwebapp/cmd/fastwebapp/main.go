@@ -1,12 +1,16 @@
-// Command fastwebapp is the framework's entrypoint: wires the database/content/payments/auth
-// gems together on a stdlib net/http.ServeMux (Go 1.22+ method+wildcard routing, no router
+// Command fastwebapp is the full demo: wires the database/content/payments/auth/downloads
+// modules (kit/<module>) together on a stdlib net/http.ServeMux (Go 1.22+ method+wildcard routing, no router
 // dependency). The checkout/webhook glue below is app-level - it's what an app built on
 // fastwebapp writes, not something that belongs inside a gem.
 package main
 
 import (
 	"crypto/rand"
-	"fastwebapp/kit"
+	"fastwebapp/kit/auth"
+	"fastwebapp/kit/content"
+	"fastwebapp/kit/database"
+	"fastwebapp/kit/downloads"
+	"fastwebapp/kit/payments"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,25 +20,25 @@ import (
 
 func main() {
 	dsn := envOr("DATABASE_URL", "fastwebapp.db")
-	db, err := kit.Open(dsn)
+	db, err := database.Open(dsn)
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
 	defer db.Close()
 
 	sessionSecret := []byte(envOr("SESSION_SECRET", randomSecret()))
-	auther, err := kit.AuthNew(db, sessionSecret)
+	authn, err := auth.New(db, sessionSecret)
 	if err != nil {
 		log.Fatalf("auth: %v", err)
 	}
 
-	catalog, err := kit.Load("kit/content_items")
+	catalog, err := content.Load(envOr("CONTENT_DIR", "../kit/content/items"))
 	if err != nil {
 		log.Fatalf("content: %v", err)
 	}
 
 	mux := http.NewServeMux()
-	auther.Routes(mux)
+	authn.Routes(mux)
 	catalog.Routes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
@@ -49,16 +53,16 @@ func main() {
 	if v := os.Getenv("DOWNLOAD_TRACKERS"); v != "" {
 		trackers = strings.Split(v, ",")
 	}
-	downloader, err := kit.DownloadsNew(db, envOr("DOWNLOADS_DIR", "downloads"), trackers)
+	downloader, err := downloads.New(db, envOr("DOWNLOADS_DIR", "downloads"), trackers)
 	if err != nil {
 		log.Fatalf("downloads: %v", err)
 	}
 	downloader.Routes(mux)
 
 	// Payments by convention: provider from env, POST /items/{slug}/checkout and POST /webhooks/<provider>.
-	if _, err := kit.Mount(mux, db, func(slug string) (kit.PayItem, bool) {
+	if _, err := payments.Mount(mux, db, func(slug string) (payments.Item, bool) {
 		it, ok := catalog.BySlug[slug]
-		return kit.PayItem{Slug: it.Slug, Title: it.Title, PriceCents: it.PriceCents, Currency: it.Currency}, ok
+		return payments.Item{Slug: it.Slug, Title: it.Title, PriceCents: it.PriceCents, Currency: it.Currency}, ok
 	}); err != nil {
 		log.Fatalf("payments: %v", err)
 	}
