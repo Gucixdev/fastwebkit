@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 // frontend is static output the Go binary can serve directly - not wired up yet, separate step.
 export default defineConfig({
   // index.html/src live in frontend/, but package.json + node_modules sit at the repo root so
-  // the gems/ folder (a sibling of frontend/, not a child) can resolve "three"/"kiwi.js" too -
+  // the web/ folder (a sibling of frontend/, not a child) can resolve "three"/"kiwi.js" too -
   // Node-style resolution only walks up through a file's own ancestors.
   root: "frontend",
   server: {

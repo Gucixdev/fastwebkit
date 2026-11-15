@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { toCSV, columnLetter, columnsFrom, toXLSX, parseCSV } from "./export";
-import { unzipStore } from "./zip";
+import { unzipStore } from "./export_zip";
 
 describe("columnsFrom", () => {
   it("takes column names from the first row's keys", () => {

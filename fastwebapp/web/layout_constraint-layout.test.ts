@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { ConstraintLayout, Operator, Strength } from "./constraint-layout";
+import { ConstraintLayout, Operator, Strength } from "./layout_constraint-layout";
 
 // ResizeObserver isn't implemented in jsdom, so these tests drive the solver directly via
 // solve() rather than through observeResize() - the constraint math is what's under test, not

@@ -20,8 +20,7 @@ Names that would clash are prefixed (`AuthNew`, `DownloadsNew`, `MongoOpen`, `Pa
 ## Layout
 
     kit/         auth content database downloads mongo payments (flat package, one prefix per module)
-    gems/        TypeScript frontend parts: chat charts datatable export layout ... (to be flattened next)
-    fastwebapp/  cmd/fastwebapp (Go wiring), frontend/ (vite)
+    fastwebapp/  cmd/fastwebapp (Go wiring), frontend/ (vite), web/ (TypeScript modules: chat charts datatable export layout ..., flat, one prefix per module)
     go.mod       module fastwebapp (root, so kit/ and fastwebapp/ are one module)
 
 Payments by convention (`kit/payments_pay.go`): set `STRIPE_API_KEY` (or `PAYPAL_CLIENT_ID`, or `BTCPAY_SERVER_URL`) plus that
@@ -29,7 +28,7 @@ provider's secrets and call `kit.Mount(mux, db, find)`: it adds `POST /items/{sl
 `POST /webhooks/<provider>`, the exactly-once ledger and refund revocation. `payments_pay.go` holds the types, guards, ledger and
 handler; each provider is one file (`payments_stripe.go`, `payments_paypal.go`, `payments_crypto.go`).
 
-Test: `go test -race ./kit/...`  and  `cd fastwebapp && npx vitest run`.
+Test: `go test -race ./kit/...`  and  `cd fastwebapp && npx vitest run   (web/ + frontend, 154 tests)`.
 
 ## Payments - what is guaranteed (all covered by tests)
 
@@ -50,11 +49,11 @@ Test: `go test -race ./kit/...`  and  `cd fastwebapp && npx vitest run`.
 - Refund/chargeback revocation (Stripe `charge.refunded` full + `charge.dispute.created`, BTCPay `InvoiceInvalid`/`InvoiceExpired`, PayPal `PAYMENT.CAPTURE.REFUNDED`/`REVERSED`) is tested against fakes / signed fixtures only. Unconfirmed vs real payloads: PayPal refund->capture mapping relies on the `up` link; Stripe `payment_intent` must be present on the charge/dispute; partial Stripe refunds deliberately keep access. Revocation is by provider ref, so payments recorded before this change (no ref) can't be revoked.
 - Orders table is just the ledger; no user<->purchase link yet.
 
-## Databases (gems/database, gems/mongo) - one file per backend
+## Databases (kit/database*.go, kit/mongo.go) - one file per backend
 
 `sqlite.go`, `postgres.go`, `mysql.go` each register themselves; delete a file and that backend leaves the build.
 DSN picks the backend: bare path / `sqlite:`, `postgres://`, `mysql://`. `Rebind` (`?` -> `$n`), `DDL` (BLOB/TEXT keys
-per dialect) and `InsertIgnore` keep gem SQL written once. MongoDB is a document store: `gems/mongo/mongo.go`, own API.
+per dialect) and `InsertIgnore` keep module SQL written once. MongoDB is a document store: `kit/mongo.go`, own API.
 Same contract tests ran on real SQLite, PostgreSQL 17, MariaDB 11 and MongoDB 8 (podman). Re-run:
 
     podman run -d --rm --name fwk-pg -e POSTGRES_PASSWORD=pw -p 127.0.0.1:55432:5432 postgres:17-alpine

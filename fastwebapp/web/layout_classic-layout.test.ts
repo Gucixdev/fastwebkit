@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gridColumnsFor, gridAreasFor, ClassicLayout } from "./classic-layout";
+import { gridColumnsFor, gridAreasFor, ClassicLayout } from "./layout_classic-layout";
 
 describe("gridColumnsFor", () => {
   it("gives a single column when there is no sidebar", () => {

@@ -2,7 +2,7 @@
 // gem), an optional search query (left to the caller - datatable just takes whatever row array
 // it's given, searchbar/searchbar.ts decides what's in it). Sort/filter are pure functions so
 // the actual ordering logic is tested without touching the DOM; render() is a thin consumer.
-import { Pagination } from "../pagination/pagination";
+import { Pagination } from "./pagination";
 
 export interface Column<T> {
   key: string;

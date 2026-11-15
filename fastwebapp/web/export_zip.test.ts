@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { crc32, zipStore, unzipStore } from "./zip";
+import { crc32, zipStore, unzipStore } from "./export_zip";
 
 describe("crc32", () => {
   it("matches the well-known CRC32 of the ASCII string 'hello'", () => {

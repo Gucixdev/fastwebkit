@@ -12,18 +12,6 @@
   },
   "include": [
     "frontend/src",
-    "gems/layout",
-    "gems/render3d",
-    "gems/spring",
-    "gems/searchbar",
-    "gems/progressbar",
-    "gems/theme",
-    "gems/charts",
-    "gems/export",
-    "gems/pagination",
-    "gems/datatable",
-    "gems/notifications",
-    "gems/upload",
-    "gems/chat"
+    "web"
   ]
 }

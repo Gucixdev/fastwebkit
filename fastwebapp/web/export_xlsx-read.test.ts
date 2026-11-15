@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toXLSX } from "./export";
-import { parseXLSX, readZipEntries } from "./xlsx-read";
+import { parseXLSX, readZipEntries } from "./export_xlsx-read";
 
 async function deflateRaw(data: Uint8Array): Promise<Uint8Array> {
   const stream = new ReadableStream<Uint8Array>({

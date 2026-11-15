@@ -4,7 +4,7 @@
 // DOM, and testing it against Node's real implementation (not a jsdom shim) is the honest way
 // to exercise it - this is exactly the "verify real changes for real" rule applied to crypto.
 import { describe, it, expect } from "vitest";
-import { generateKeyPair, exportPublicKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage } from "./crypto";
+import { generateKeyPair, exportPublicKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage } from "./chat_crypto";
 
 describe("ECDH + AES-GCM end-to-end flow", () => {
   it("two independently generated keypairs derive the same shared key", async () => {

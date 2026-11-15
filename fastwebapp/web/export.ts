@@ -3,7 +3,7 @@
 // plain text, trivial to hand-write; .xlsx is a zip of small XML parts (see zip.ts for why that
 // didn't need a dependency either) - using inline strings (t="inlineStr") instead of a shared-
 // strings table keeps the XML side just as simple as the zip side.
-import { zipStore } from "./zip";
+import { zipStore } from "./export_zip";
 
 export function columnsFrom<T extends Record<string, unknown>>(rows: T[]): string[] {
   return rows.length === 0 ? [] : Object.keys(rows[0]!);

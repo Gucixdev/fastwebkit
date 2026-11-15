@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidSize, clampPixelRatio } from "./scene";
+import { isValidSize, clampPixelRatio } from "./render3d_scene";
 
 // Scene3D itself constructs a real THREE.WebGLRenderer, which needs a real WebGL context -
 // jsdom's canvas.getContext() returns null for "webgl"/"webgl2" (no GPU in this environment,

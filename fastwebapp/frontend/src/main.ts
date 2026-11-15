@@ -1,19 +1,19 @@
 import * as THREE from "three";
-import { ClassicLayout } from "../../gems/layout/classic-layout";
-import { ConstraintLayout, Operator, Strength } from "../../gems/layout/constraint-layout";
-import { Scene3D } from "../../gems/render3d/scene";
-import { Spring } from "../../gems/spring/spring";
-import { SearchBar, filterByQuery } from "../../gems/searchbar/searchbar";
-import { ProgressBar } from "../../gems/progressbar/progressbar";
-import { ThemeController } from "../../gems/theme/theme";
-import { drawBarChart, drawLineChart, type BarDatum } from "../../gems/charts/charts";
-import { downloadCSV, downloadXLSX, parseCSV } from "../../gems/export/export";
-import { parseXLSX } from "../../gems/export/xlsx-read";
-import { DataTable } from "../../gems/datatable/datatable";
-import { NotificationCenter } from "../../gems/notifications/notifications";
-import { UploadZone } from "../../gems/upload/upload";
-import { ChatStore, ChatView, actionButton, copyText, copyToClipboard } from "../../gems/chat/chat";
-import { generateKeyPair, exportPublicKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage } from "../../gems/chat/crypto";
+import { ClassicLayout } from "../../web/layout_classic-layout";
+import { ConstraintLayout, Operator, Strength } from "../../web/layout_constraint-layout";
+import { Scene3D } from "../../web/render3d_scene";
+import { Spring } from "../../web/spring";
+import { SearchBar, filterByQuery } from "../../web/searchbar";
+import { ProgressBar } from "../../web/progressbar";
+import { ThemeController } from "../../web/theme";
+import { drawBarChart, drawLineChart, type BarDatum } from "../../web/charts";
+import { downloadCSV, downloadXLSX, parseCSV } from "../../web/export";
+import { parseXLSX } from "../../web/export_xlsx-read";
+import { DataTable } from "../../web/datatable";
+import { NotificationCenter } from "../../web/notifications";
+import { UploadZone } from "../../web/upload";
+import { ChatStore, ChatView, actionButton, copyText, copyToClipboard } from "../../web/chat";
+import { generateKeyPair, exportPublicKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage } from "../../web/chat_crypto";
 
 interface Item {
   Slug: string;
@@ -24,7 +24,7 @@ interface Item {
 }
 
 // --- shell: one classic header/sidebar/main/footer layout, the shape most pages actually use.
-// ConstraintLayout stays available as an opt-in gem (demoed in its own bounded box below), it's
+// ConstraintLayout stays available as an opt-in module (demoed in its own bounded box below), it's
 // just no longer what the whole page is built on.
 const header = document.createElement("header");
 const sidebar = document.createElement("aside");
@@ -65,7 +65,7 @@ const searchBar = new SearchBar(searchHost, { placeholder: "Search items…" });
 // --- sidebar: nav between the demo sections.
 sidebar.innerHTML = `
   <h2>fastwebapp</h2>
-  <p>Go backend · TS frontend · one classic layout, everything else is an opt-in gem</p>
+  <p>Go backend · TS frontend · one classic layout, everything else is an opt-in module</p>
   <nav>
     <a href="#items">Items</a>
     <a href="#charts">Charts</a>
@@ -220,7 +220,7 @@ chatSection.append(chatHost);
 mainEl.append(chatSection);
 
 // This demo is a chatbot-style use case, so it opts into Copy/Fork/Regenerate itself via
-// renderActions - the chat gem's core tree logic doesn't know or care that these exist. A plain
+// renderActions - the chat module's core tree logic doesn't know or care that these exist. A plain
 // messenger app would pass a different renderActions (or none) using the same hook.
 const chatStore = new ChatStore();
 const chatView = new ChatView(chatHost, chatStore, {
@@ -254,7 +254,7 @@ const chatView = new ChatView(chatHost, chatStore, {
 });
 
 // Demo: two independent keypairs derive the same shared key and round-trip an encrypted
-// message, proving the gem end-to-end rather than just appending plaintext bubbles.
+// message, proving the module end-to-end rather than just appending plaintext bubbles.
 async function runChatCryptoDemo(): Promise<void> {
   const alice = await generateKeyPair();
   const bob = await generateKeyPair();
@@ -271,11 +271,11 @@ async function runChatCryptoDemo(): Promise<void> {
 }
 runChatCryptoDemo();
 
-// --- constraint layout: opt-in gem, demoed in its own bounded box rather than driving the
+// --- constraint layout: opt-in module, demoed in its own bounded box rather than driving the
 // whole page (that's classic-layout's job now). Same 0.3x sidebar/main relationship as before.
 const constraintSection = document.createElement("section");
 constraintSection.id = "constraint-demo";
-constraintSection.innerHTML = `<h2>Constraint layout (opt-in gem)</h2><p>Sidebar is always exactly 0.3x of main's width, inside this box only.</p>`;
+constraintSection.innerHTML = `<h2>Constraint layout (opt-in module)</h2><p>Sidebar is always exactly 0.3x of main's width, inside this box only.</p>`;
 const constraintBox = document.createElement("div");
 constraintBox.className = "fwa-constraint-demo-box";
 const constraintSidebar = document.createElement("div");
@@ -302,7 +302,7 @@ cl.constrain(cSidebar.width, Operator.Eq, cMain.width.multiply(0.3), Strength.st
 cl.constrain(cSidebar.width.plus(cMain.width), Operator.Eq, cl.container.width);
 cl.observeResize();
 
-// --- 3D hero: a rotating icosahedron, mounted into #hero. This is the opt-in gem, not the
+// --- 3D hero: a rotating icosahedron, mounted into #hero. This is the opt-in module, not the
 // framework's foundation - the rest of the page is ordinary DOM.
 const scene3d = new Scene3D(hero, { cameraDistance: 3.2 });
 const mesh = new THREE.Mesh(
@@ -316,7 +316,7 @@ scene3d.onFrame((dt) => {
 });
 
 // --- items from the Go backend: a searchable, sortable, paginated table (datatable + searchbar
-// + pagination gems), each card still lifted on hover by a spring, plus CSV/XLSX export.
+// + pagination modules), each card still lifted on hover by a spring, plus CSV/XLSX export.
 async function loadItems(): Promise<void> {
   let items: Item[] = [];
   try {
