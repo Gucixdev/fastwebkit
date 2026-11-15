@@ -19,9 +19,9 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   // A plain ReadableStream rather than Blob.stream() - jsdom's Blob polyfill (used by this
   // project's own test environment) doesn't implement .stream(), so going through Blob at all
   // would make this untestable; a hand-built single-chunk stream works the same everywhere.
-  const stream = new ReadableStream<Uint8Array>({
+  const stream = new ReadableStream<BufferSource>({
     start(controller) {
-      controller.enqueue(data);
+      controller.enqueue(new Uint8Array(data));
       controller.close();
     },
   }).pipeThrough(new DecompressionStream("deflate-raw"));

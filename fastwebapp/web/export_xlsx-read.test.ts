@@ -3,9 +3,9 @@ import { toXLSX } from "./export";
 import { parseXLSX, readZipEntries } from "./export_xlsx-read";
 
 async function deflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  const stream = new ReadableStream<Uint8Array>({
+  const stream = new ReadableStream<BufferSource>({
     start(controller) {
-      controller.enqueue(data);
+      controller.enqueue(new Uint8Array(data));
       controller.close();
     },
   }).pipeThrough(new CompressionStream("deflate-raw"));
