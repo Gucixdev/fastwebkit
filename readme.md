@@ -2,8 +2,11 @@
 
 stb-styled web framework for a solo dev: chatbots, crud, saas, dropshipping. Local, easy to migrate.
 
-One language, no headache: **Go backend + TypeScript gems** (the frontend). A "gem" is a small standalone
-package (`gems/<name>/`) that knows nothing about the others; the app (`fastwebapp/cmd`) wires them together.
+One language, no headache: **Go backend**, TypeScript only where a frontend part is complex. The backend is one flat
+Go package, `kit/`, and a module is a file: `kit/auth*.go`, `kit/payments*.go`, ... Copy the files of one module
+(plus `database*.go` if it uses the database) into any Go project. Optional parts are separate files with the module's
+prefix (`payments_stripe.go`, `database_postgres.go`): delete the file and that part is gone from the build.
+Names that would clash are prefixed (`AuthNew`, `DownloadsNew`, `MongoOpen`, `PayItem`).
 
 ## Principles
 
@@ -16,16 +19,17 @@ package (`gems/<name>/`) that knows nothing about the others; the app (`fastweba
 
 ## Layout
 
-    gems/        payments auth database content downloads | TS: chat charts datatable export layout ...
+    kit/         auth content database downloads mongo payments (flat package, one prefix per module)
+    gems/        TypeScript frontend parts: chat charts datatable export layout ... (to be flattened next)
     fastwebapp/  cmd/fastwebapp (Go wiring), frontend/ (vite)
-    go.mod       module fastwebapp (root, so gems/ and fastwebapp/ are one module)
+    go.mod       module fastwebapp (root, so kit/ and fastwebapp/ are one module)
 
-Payments by convention (`gems/payments/pay.go`): set `STRIPE_API_KEY` (or `PAYPAL_CLIENT_ID`, or `BTCPAY_SERVER_URL`) plus that
-provider's secrets and call `payments.Mount(mux, db, find)`: it adds `POST /items/{slug}/checkout` and
-`POST /webhooks/<provider>`, the exactly-once ledger and refund revocation. `pay.go` holds the types, guards, ledger and
-handler; each provider is one file (`stripe.go`, `paypal.go`, `crypto.go`).
+Payments by convention (`kit/payments_pay.go`): set `STRIPE_API_KEY` (or `PAYPAL_CLIENT_ID`, or `BTCPAY_SERVER_URL`) plus that
+provider's secrets and call `kit.Mount(mux, db, find)`: it adds `POST /items/{slug}/checkout` and
+`POST /webhooks/<provider>`, the exactly-once ledger and refund revocation. `payments_pay.go` holds the types, guards, ledger and
+handler; each provider is one file (`payments_stripe.go`, `payments_paypal.go`, `payments_crypto.go`).
 
-Test: `go test -race ./gems/...`  and  `cd fastwebapp && npx vitest run`.
+Test: `go test -race ./kit/...`  and  `cd fastwebapp && npx vitest run`.
 
 ## Payments - what is guaranteed (all covered by tests)
 
@@ -57,7 +61,7 @@ Same contract tests ran on real SQLite, PostgreSQL 17, MariaDB 11 and MongoDB 8 
     podman run -d --rm --name fwk-my -e MARIADB_ROOT_PASSWORD=pw -e MARIADB_DATABASE=t -p 127.0.0.1:53306:3306 mariadb:11
     podman run -d --rm --name fwk-mongo -p 127.0.0.1:57017:27017 mongo:8
     FWK_TEST_POSTGRES=postgres://postgres:pw@127.0.0.1:55432/postgres FWK_TEST_MYSQL=mysql://root:pw@127.0.0.1:53306/t \
-    FWK_TEST_MONGO=mongodb://127.0.0.1:57017 go test -race ./gems/...
+    FWK_TEST_MONGO=mongodb://127.0.0.1:57017 go test -race ./kit/...
 
 auth + downloads tests also ran green on all three SQL backends (`FWK_TEST_DB=postgres|mysql|sqlite go test ./gems/auth ./gems/downloads`, helper `database.OpenTest`); gems/content has no SQL. Not done: Redis/KV, DuckDB.
 

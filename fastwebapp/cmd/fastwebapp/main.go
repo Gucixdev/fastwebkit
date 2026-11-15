@@ -6,34 +6,29 @@ package main
 
 import (
 	"crypto/rand"
+	"fastwebapp/kit"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-
-	"fastwebapp/gems/auth"
-	"fastwebapp/gems/content"
-	"fastwebapp/gems/database"
-	"fastwebapp/gems/downloads"
-	"fastwebapp/gems/payments"
 )
 
 func main() {
 	dsn := envOr("DATABASE_URL", "fastwebapp.db")
-	db, err := database.Open(dsn)
+	db, err := kit.Open(dsn)
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
 	defer db.Close()
 
 	sessionSecret := []byte(envOr("SESSION_SECRET", randomSecret()))
-	auther, err := auth.New(db, sessionSecret)
+	auther, err := kit.AuthNew(db, sessionSecret)
 	if err != nil {
 		log.Fatalf("auth: %v", err)
 	}
 
-	catalog, err := content.Load("gems/content/items")
+	catalog, err := kit.Load("kit/content_items")
 	if err != nil {
 		log.Fatalf("content: %v", err)
 	}
@@ -54,16 +49,16 @@ func main() {
 	if v := os.Getenv("DOWNLOAD_TRACKERS"); v != "" {
 		trackers = strings.Split(v, ",")
 	}
-	downloader, err := downloads.New(db, envOr("DOWNLOADS_DIR", "downloads"), trackers)
+	downloader, err := kit.DownloadsNew(db, envOr("DOWNLOADS_DIR", "downloads"), trackers)
 	if err != nil {
 		log.Fatalf("downloads: %v", err)
 	}
 	downloader.Routes(mux)
 
 	// Payments by convention: provider from env, POST /items/{slug}/checkout and POST /webhooks/<provider>.
-	if _, err := payments.Mount(mux, db, func(slug string) (payments.Item, bool) {
+	if _, err := kit.Mount(mux, db, func(slug string) (kit.PayItem, bool) {
 		it, ok := catalog.BySlug[slug]
-		return payments.Item{Slug: it.Slug, Title: it.Title, PriceCents: it.PriceCents, Currency: it.Currency}, ok
+		return kit.PayItem{Slug: it.Slug, Title: it.Title, PriceCents: it.PriceCents, Currency: it.Currency}, ok
 	}); err != nil {
 		log.Fatalf("payments: %v", err)
 	}
