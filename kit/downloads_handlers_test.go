@@ -126,3 +126,40 @@ func TestFileAndTorrentUnknownIDAre404(t *testing.T) {
 		}
 	}
 }
+
+func TestListAsHTMLForABrowserAndUploadRedirects(t *testing.T) {
+	_, mux := newTestServer(t)
+	get := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, "/downloads", nil)
+		req.Header.Set("Accept", "text/html,application/xhtml+xml")
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		return w
+	}
+	w := get()
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "No files yet") || !strings.Contains(w.Body.String(), `enctype="multipart/form-data"`) {
+		t.Fatalf("empty page: %d %s", w.Code, w.Body.String())
+	}
+
+	body, ctype := multipartUpload(t, "a<i>b.txt", "hello")
+	req := httptest.NewRequest(http.MethodPost, "/downloads", body)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("Accept", "text/html")
+	up := httptest.NewRecorder()
+	mux.ServeHTTP(up, req)
+	if up.Code != http.StatusSeeOther || up.Header().Get("Location") != "/downloads" {
+		t.Fatalf("browser upload: %d -> %q", up.Code, up.Header().Get("Location"))
+	}
+
+	page := get().Body.String()
+	if strings.Contains(page, "a<i>b") || !strings.Contains(page, "a&lt;i&gt;b.txt") || !strings.Contains(page, "5 B") || !strings.Contains(page, "magnet") {
+		t.Fatalf("listing page: %s", page)
+	}
+
+	jreq := httptest.NewRequest(http.MethodGet, "/downloads", nil)
+	jw := httptest.NewRecorder()
+	mux.ServeHTTP(jw, jreq)
+	if !strings.HasPrefix(jw.Header().Get("Content-Type"), "application/json") {
+		t.Fatalf("curl must still get JSON, got %q", jw.Header().Get("Content-Type"))
+	}
+}

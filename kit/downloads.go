@@ -12,12 +12,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -400,6 +402,10 @@ func (d *Downloads) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if WantsHTML(r) {
+		http.Redirect(w, r, "/downloads", http.StatusSeeOther)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(d.toListing(entry))
 }
@@ -414,8 +420,51 @@ func (d *Downloads) handleList(w http.ResponseWriter, r *http.Request) {
 	for _, e := range entries {
 		out = append(out, d.toListing(e))
 	}
+	if WantsHTML(r) {
+		downloadsPage(w, out)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(out)
+}
+
+var downloadsTmpl = template.Must(template.New("downloads").Parse(`<h1>Downloads</h1>
+<form method="post" action="/downloads" enctype="multipart/form-data">
+<p><input type="file" name="file" required> <button type="submit">Upload</button></p>
+</form>
+{{if .}}<ul class="cards">{{range .}}
+<li><span><a href="{{.FileURL}}">{{.Filename}}</a> <span class="price">{{.Size}}</span></span>
+<span><a href="{{.TorrentURL}}">.torrent</a> · <a href="{{.MagnetURL}}">magnet</a></span></li>{{end}}</ul>
+{{else}}<p class="price">No files yet.</p>{{end}}`))
+
+// downloadsPage lists the files for a browser, with an upload form that posts back to /downloads.
+func downloadsPage(w http.ResponseWriter, items []listing) {
+	type row struct {
+		listing
+		Size string
+		// html/template refuses the magnet: scheme in href; the link is built here from a hex hash and
+		// url.Values.Encode, so it is safe to mark as a URL (attribute escaping still applies).
+		MagnetURL template.URL
+	}
+	rows := make([]row, len(items))
+	for i, it := range items {
+		rows[i] = row{it, humanSize(it.SizeBytes), template.URL(it.Magnet)}
+	}
+	var b strings.Builder
+	_ = downloadsTmpl.Execute(&b, rows)
+	Page(w, http.StatusOK, "Downloads", template.HTML(b.String()))
+}
+
+func humanSize(n int64) string {
+	switch {
+	case n >= 1<<30:
+		return fmt.Sprintf("%.1f GB", float64(n)/(1<<30))
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%.1f KB", float64(n)/(1<<10))
+	}
+	return fmt.Sprintf("%d B", n)
 }
 
 func (d *Downloads) handleFile(w http.ResponseWriter, r *http.Request) {

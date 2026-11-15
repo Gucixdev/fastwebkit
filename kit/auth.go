@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -196,57 +197,124 @@ type credentials struct {
 }
 
 // Routes registers /register, /login, /logout. Mount it under whatever prefix the app wants.
+// A POST with Content-Type application/json answers JSON; a POST from an HTML form
+// (application/x-www-form-urlencoded) sets the cookie and redirects to the form's "next" (a path on this
+// site, default "/"), or shows the form again with the error. GET /login and GET /register serve the forms.
 func (a *Auth) Routes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) { authForm(w, r, "register", "", http.StatusOK) })
+	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) { authForm(w, r, "login", "", http.StatusOK) })
 	mux.HandleFunc("POST /register", a.handleRegister)
 	mux.HandleFunc("POST /login", a.handleLogin)
 	mux.HandleFunc("POST /logout", a.handleLogout)
 }
 
-func (a *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
+var authFormTmpl = template.Must(template.New("form").Parse(`<h1>{{.Title}}</h1>
+{{if .Err}}<p role="alert" style="color:#c33">{{.Err}}</p>{{end}}
+<form method="post" action="/{{.Kind}}">
+<input type="hidden" name="next" value="{{.Next}}">
+<p><label>Email<br><input type="email" name="email" required autofocus autocomplete="username"></label></p>
+<p><label>Password<br><input type="password" name="password" required autocomplete="{{.Autocomplete}}"></label></p>
+<p><button type="submit">{{.Title}}</button></p>
+</form>
+<p>{{if eq .Kind "login"}}No account? <a href="/register">Register</a>{{else}}Have an account? <a href="/login">Log in</a>{{end}}</p>`))
+
+// authForm renders the login or register page; next survives the round trip only if it is a local path.
+func authForm(w http.ResponseWriter, r *http.Request, kind, errMsg string, status int) {
+	title, auto := "Log in", "current-password"
+	if kind == "register" {
+		title, auto = "Register", "new-password"
+	}
+	var b strings.Builder
+	_ = authFormTmpl.Execute(&b, struct{ Title, Kind, Err, Next, Autocomplete string }{title, kind, errMsg, safeNext(r.FormValue("next")), auto})
+	Page(w, status, title, template.HTML(b.String()))
+}
+
+// safeNext keeps a redirect target on this site: one leading slash, no "//" or backslash tricks, no scheme.
+func safeNext(next string) string {
+	if next == "" || next[0] != '/' || strings.HasPrefix(next, "//") || strings.ContainsAny(next, "\\\r\n") {
+		return "/"
+	}
+	return next
+}
+
+func isFormPost(r *http.Request) bool {
+	return strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded")
+}
+
+// readCreds takes the credentials from a form or from JSON.
+func readCreds(r *http.Request) (credentials, error) {
 	var creds credentials
-	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
+	if isFormPost(r) {
+		if err := r.ParseForm(); err != nil {
+			return creds, err
+		}
+		return credentials{Email: r.PostFormValue("email"), Password: r.PostFormValue("password")}, nil
 	}
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	return creds, err
+}
 
-	user, err := a.Register(creds.Email, creds.Password)
-	if errors.Is(err, ErrEmailTaken) {
-		http.Error(w, err.Error(), http.StatusConflict)
+// authFail answers an error as plain text for JSON clients and as the form again for browsers.
+func authFail(w http.ResponseWriter, r *http.Request, kind, msg string, status int) {
+	if isFormPost(r) {
+		authForm(w, r, kind, msg, status)
 		return
 	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	http.Error(w, msg, status)
+}
 
+// authOK sets the cookie and answers: a redirect for forms, the user as JSON otherwise.
+func (a *Auth) authOK(w http.ResponseWriter, r *http.Request, user User) {
 	a.setSessionCookie(w, user.ID)
+	if isFormPost(r) {
+		http.Redirect(w, r, safeNext(r.PostFormValue("next")), http.StatusSeeOther)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
 
-func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
-	var creds credentials
-	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+func (a *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
+	creds, err := readCreds(r)
+	if err != nil {
+		authFail(w, r, "register", "bad request", http.StatusBadRequest)
 		return
 	}
-
-	user, err := a.Login(creds.Email, creds.Password)
-	if errors.Is(err, ErrInvalidLogin) {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	user, err := a.Register(creds.Email, creds.Password)
+	if errors.Is(err, ErrEmailTaken) {
+		authFail(w, r, "register", err.Error(), http.StatusConflict)
 		return
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		authFail(w, r, "register", err.Error(), http.StatusInternalServerError)
 		return
 	}
+	a.authOK(w, r, user)
+}
 
-	a.setSessionCookie(w, user.ID)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
+	creds, err := readCreds(r)
+	if err != nil {
+		authFail(w, r, "login", "bad request", http.StatusBadRequest)
+		return
+	}
+	user, err := a.Login(creds.Email, creds.Password)
+	if errors.Is(err, ErrInvalidLogin) {
+		authFail(w, r, "login", err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if err != nil {
+		authFail(w, r, "login", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.authOK(w, r, user)
 }
 
 func (a *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
 	a.clearSessionCookie(w)
+	if isFormPost(r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

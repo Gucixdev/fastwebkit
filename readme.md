@@ -4,10 +4,14 @@ stb-styled web framework for a solo dev: chatbots, crud, saas, dropshipping. Loc
 
 One language, no headache: **Go backend and Go-rendered pages** (`kit/ui.go`: one `Page` function, embedded CSS, light/dark,
 no JavaScript; `GET /` and `/items` give HTML to a browser and JSON to curl), TypeScript only where a frontend part is complex. The backend is one flat
-Go package, `kit/`, and a module is a file: `kit/auth*.go`, `kit/payments*.go`, ... Copy the files of one module
+Go package, `kit/`, and a module is a file: `kit/auth.go`, `kit/content.go`, `kit/downloads.go`, `kit/payments*.go`, ... Copy the files of one module
 (plus `database*.go` if it uses the database) into any Go project. Optional parts are separate files with the module's
 prefix (`payments_stripe.go`, `database_postgres.go`): delete the file and that part is gone from the build.
 Names that would clash are prefixed (`AuthNew`, `DownloadsNew`, `MongoOpen`, `PayItem`).
+
+Browsers get pages, scripts get JSON, on the same routes: `GET /login` and `GET /register` are forms, a form POST sets the
+session cookie and redirects to `next` (a local path only, anything else becomes `/`), a JSON POST answers JSON as before;
+`GET /downloads` is a file list with an upload form when the request asks for HTML.
 
 ## Principles
 

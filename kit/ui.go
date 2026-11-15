@@ -18,6 +18,7 @@ header,main{max-width:46rem;margin:0 auto;padding:1rem}header{border-bottom:1px 
 header a{color:var(--fg);text-decoration:none;font-weight:600}h1{font-size:1.5rem;margin:.5rem 0 1rem}
 ul.cards{list-style:none;padding:0;display:grid;gap:.75rem}ul.cards li{border:1px solid var(--line);border-radius:.5rem;padding:.75rem 1rem;display:flex;justify-content:space-between;gap:1rem;align-items:center}
 ul.cards a{color:var(--fg);font-weight:600;text-decoration:none}.price{color:var(--mut)}
+input{width:100%;max-width:22rem;padding:.4rem .5rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.4rem}
 button,.btn{background:var(--acc);color:#fff;border:0;border-radius:.4rem;padding:.5rem 1rem;font:inherit;cursor:pointer}
 img{max-width:100%;height:auto}`
 
