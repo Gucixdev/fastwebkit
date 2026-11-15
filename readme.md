@@ -28,7 +28,7 @@ provider's secrets and call `kit.Mount(mux, db, find)`: it adds `POST /items/{sl
 `POST /webhooks/<provider>`, the exactly-once ledger and refund revocation. `payments_pay.go` holds the types, guards, ledger and
 handler; each provider is one file (`payments_stripe.go`, `payments_paypal.go`, `payments_crypto.go`).
 
-Test: `go test -race ./kit/...`  and  `cd fastwebapp && npx vitest run   (web/ + frontend, 154 tests)`.
+Test: `go test -race ./kit/...` and `cd fastwebapp && npx vitest run` (web/ and frontend, 154 tests).
 
 ## Payments - what is guaranteed (all covered by tests)
 
