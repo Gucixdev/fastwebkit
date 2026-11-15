@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# run - start the server template on :8080 (ADDR, DATABASE_URL, SESSION_SECRET, DOWNLOADS_DIR, MAX_UPLOAD_MB from the environment).
+# No arguments.
+set -eu
+cd "$(dirname "$(readlink -f "$0")")"
+[ $# -eq 0 ] || { echo "run: takes no arguments (settings come from the environment)" >&2; exit 2; }
+command -v go > /dev/null || { echo "run: go not found" >&2; exit 1; }
+go build -o .bin .
+exec ./.bin
