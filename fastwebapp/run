@@ -7,7 +7,7 @@ cd "$here"
 pkill -f "$here/fastwebapp" 2>/dev/null || true
 pkill -f "vite --port 5173" 2>/dev/null || true
 
-go build -o fastwebapp ./cmd/fastwebapp
+./build
 
 STRIPE_API_KEY="${STRIPE_API_KEY:-sk_test_fake}" ADDR=:8080 ./fastwebapp > server.log 2>&1 &
 backend_pid=$!
