@@ -6,7 +6,7 @@ node_modules/
 *.so
 .env
 .env.*
-fastwebapp/fastwebapp
+src/fastwebapp/fastwebapp
 *.db
 *.db-*
 *.log
@@ -19,3 +19,5 @@ run.out
 /templates/*/downloads/
 /templates/*/*.db
 /templates/*/.bin
+.bin
+src/examples/nodenote/
